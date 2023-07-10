@@ -7,6 +7,9 @@ import Header from '../components/Header'
 import ChatMessages from '../components/ChatMessages'
 import InputBar from '../components/InputBar'
 
+const backendAppUrl = 'https://logan-ihi-glorious-system-49w5wvpjr9ph7rvg-8000.preview.app.github.dev'
+// const backendAppUrl = 'http://127.0.0.1:8000'
+
 export default function Home() {
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
@@ -19,10 +22,11 @@ export default function Home() {
     }
 
     const getSystemMessage = async (userInputMessage) => {
-        const response = await fetch('https://chat-twitter-backend.fly.dev/system_message', {
+        const response = await fetch(`${backendAppUrl}/system_message`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify(userInputMessage),
         })
@@ -59,7 +63,7 @@ export default function Home() {
 
     const handleChat = async (updatedMessages) => {
         let accumulatedText = "";
-        fetch('https://chat-twitter-backend.fly.dev/chat_stream', {
+        fetch(`${backendAppUrl}/chat_stream`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

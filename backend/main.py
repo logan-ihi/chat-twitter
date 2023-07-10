@@ -27,6 +27,7 @@ import os
 app = FastAPI()
 
 origins = [
+    "https://logan-ihi-glorious-system-49w5wvpjr9ph7rvg-3000.preview.app.github.dev",
     "http://localhost",
     "http://localhost:8080",
     "http://localhost:3000",
@@ -37,15 +38,15 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
-    allow_credentials=True,
+    allow_origins=['*','https://logan-ihi-glorious-system-49w5wvpjr9ph7rvg-3000.preview.app.github.dev'],
+    # allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 pinecone.init(
     api_key=os.environ['PINECONE_API_KEY'],
-    environment='us-east1-gcp'
+    environment='asia-southeast1-gcp-free'
 )
 
 class Message(BaseModel):
@@ -99,10 +100,10 @@ def embedding_search(query, k):
         openai_organization=os.environ['OPENAI_ORG_ID'],
     )
     db = Pinecone(
-        index=pinecone.Index('pinecone-index'),
+        index=pinecone.Index('ih-test-index'),
         embedding_function=embeddings.embed_query,
         text_key='text',
-        namespace='twitter-algorithm'
+        namespace='ih-dev-static-export-filtered'
     )
 
     return db.similarity_search(query, k=k)
@@ -116,14 +117,24 @@ def system_message(query: Message):
     docs = embedding_search(query.text, k=10)
     context = format_context(docs)
 
-    prompt = """Given the following context and code, answer the following question. Do not use outside context, and do not assume the user can see the provided context. Try to be as detailed as possible and reference the components that you are looking at. Keep in mind that these are only code snippets, and more snippets may be added during the conversation.
-    Do not generate code, only reference the exact code snippets that you have been provided with. If you are going to write code, make sure to specify the language of the code. For example, if you were writing Python, you would write the following:
+    # prompt = """Given the following context and code, answer the following question. Do not use outside context, and do not assume the user can see the provided context. Try to be as detailed as possible and reference the components that you are looking at. Keep in mind that these are only code snippets, and more snippets may be added during the conversation.
+    # Do not generate code, only reference the exact code snippets that you have been provided with. If you are going to write code, make sure to specify the language of the code. For example, if you were writing Python, you would write the following:
 
-    ```python
-    <python code goes here>
-    ```
+    # ```python
+    # <python code goes here>
+    # ```
     
-    Now, here is the relevant context: 
+    # Now, here is the relevant context: 
+
+    # Context: {context}
+    # """
+
+    prompt = """You are a representative of Iron Horse, a B2B marketing agency.
+    Given the following context and webpage content, answer the following question. Do not use outside context, and do not assume the user can see the provided context. Try to be as detailed as possible and reference the text of the HTML content that you are looking at. Don't reference any JavaScript or CSS, or assume what it might do.
+    Do not generate new information, only reference the information you have been provided with, and remove all HTML tags. When providing a bulleted list, provide a maximum of five bullets, and if five bullets are reached, suggest that the user can ask for more.
+    Always represent Iron Horse in a positive light and be eager to answer the user's questions. When unable to answer a question, consider what might be related or helpful for the user, and propose discussing that instead.
+
+    Now, here is the relevant context. Do not refer to the context in your answer, but use it to answer the question. 
 
     Context: {context}
     """

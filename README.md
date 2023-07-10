@@ -59,6 +59,8 @@ python create_vector_db.py
 
 ```
 uvicorn main:app --reload
+# or
+gunicorn main:app --bind [::]:8000 -k uvicorn.workers.UvicornWorker
 ```
 
 9. The URL for the backend is currently hard coded to the live server URL. You will have to change this to localhost or your other server name.

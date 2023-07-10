@@ -27,6 +27,11 @@ def zipfile_from_github():
     zf = BytesIO(http_response.read())
     return zipfile.ZipFile(zf, 'r')
 
+def zipfile_from_local():
+    # load ih-dev-static-export-filtered.zip
+    zip_file = open('../ih-dev-static-export-filtered.zip', 'rb')
+    return zipfile.ZipFile(zip_file, 'r')
+
 embeddings = OpenAIEmbeddings(
     openai_api_key=os.environ['OPENAI_API_KEY'],
     openai_organization=os.environ['OPENAI_ORG_ID'],
@@ -35,20 +40,20 @@ encoder = tiktoken.get_encoding('cl100k_base')
 
 pinecone.init(
     api_key=os.environ['PINECONE_API_KEY'],
-    environment='us-east1-gcp'
+    environment='asia-southeast1-gcp-free'
 )
 vector_store = Pinecone(
-    index=pinecone.Index('pinecone-index'),
+    index=pinecone.Index('ih-test-index'),
     embedding_function=embeddings.embed_query,
     text_key='text',
-    namespace='twitter-algorithm'
+    namespace='ih-dev-static-export-filtered'
 )
 
 splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
 
 total_tokens, corpus_summary = 0, []
 file_texts, metadatas = [], []
-with zipfile_from_github() as zip_ref:
+with zipfile_from_local() as zip_ref:
     zip_file_list = zip_ref.namelist()
     
     pbar = tqdm(zip_file_list, desc=f'Total tokens: 0')
@@ -61,7 +66,7 @@ with zipfile_from_github() as zip_ref:
         else:
             with zip_ref.open(file_name, 'r') as file:
                 file_contents = str(file.read())
-                file_name_trunc = str(file_name).replace('the-algorithm-main/', '')
+                file_name_trunc = str(file_name).replace('ih-dev-static-export-filtered/', '')
                 
                 n_tokens = len(encoder.encode(file_contents))
                 total_tokens += n_tokens
@@ -75,8 +80,8 @@ split_documents = splitter.create_documents(file_texts, metadatas=metadatas)
 vector_store.from_documents(
     documents=split_documents, 
     embedding=embeddings,
-    index_name='pinecone-index',
-    namespace='twitter-algorithm'
+    index_name='ih-test-index',
+    namespace='ih-dev-static-export-filtered'
 )
 
-pd.DataFrame.from_records(corpus_summary).to_csv('data/corpus_summary.csv', index=False)
+pd.DataFrame.from_records(corpus_summary).to_csv('data/corpus_summary_ih.csv', index=False)
